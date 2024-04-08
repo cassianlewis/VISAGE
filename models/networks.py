@@ -4,26 +4,28 @@ import torch.nn.parallel
 from models.blurpool import BlurPool, BlurTranspose
 
 
-def normal_init(m, mean, std):
+def normal_init(m: nn.Module, mean: float, std: float) -> None:
     if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
         m.weight.data.normal_(mean, std)
         m.bias.data.zero_()
 
 
 class MaxBlurPool(nn.Module):
-    def __init__(self, in_channels):
+    """Max pooling layer with blurring."""
+    def __init__(self, in_channels: int):
         super(MaxBlurPool, self).__init__()
         self.max = nn.MaxPool2d(kernel_size=2, stride=1)
         self.blur = BlurPool(in_channels, stride=2)
 
-    def forward(self,x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x1 = self.max(x)
         x2 = self.blur(x1)
         return x2
 
 
 class DownLayer(nn.Module):
-    def __init__(self, in_channels, out_channels, batch_norm1=True, batch_norm2=True):
+    """Downsampling layer with convolutional and blurring operations."""
+    def __init__(self, in_channels: int, out_channels: int, batch_norm1: bool = True, batch_norm2: bool = True):
         super(DownLayer, self).__init__()
         self.maxblur = MaxBlurPool(in_channels)
         self.down = nn.Sequential(
@@ -35,14 +37,15 @@ class DownLayer(nn.Module):
             nn.LeakyReLU(),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x1 = self.maxblur(x)
         x2 = self.down(x1)
         return x2
 
 
 class UpLayer(nn.Module):
-    def __init__(self, in_channels, out_channels, batch_norm1=True, batch_norm2=True):
+    """Upsampling layer with convolutional and blurring operations."""
+    def __init__(self, in_channels: int, out_channels: int, batch_norm1: bool = True, batch_norm2: bool = True):
         super(UpLayer, self).__init__()
         self.convo = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1),
@@ -57,23 +60,24 @@ class UpLayer(nn.Module):
             nn.LeakyReLU()
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x1 = self.convo(x)
         x2 = self.blur(x1)
         x3 = self.up(x2)
         return x3
 
 
-# Convolutional layer with blurring
+
 class ConvBlurPool(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, filt_size=4):
+    """Convolutional layer with blurring and pooling. For use in the discriminator network."""
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int, stride: int, filt_size: int = 4):
         super(ConvBlurPool, self).__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride = 1, padding=(kernel_size-1)//2)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=(kernel_size - 1) // 2)
         self.batchnorm = nn.BatchNorm2d(out_channels)
         self.blur_pool = BlurPool(out_channels, filt_size=filt_size, stride=stride)
         self.relu = nn.ReLU()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv(x)
         x = self.batchnorm(x)
         x = self.relu(x)
@@ -81,8 +85,9 @@ class ConvBlurPool(nn.Module):
         return x
 
 
-# Unet generator with skip connections
+
 class Generator(nn.Module):
+    """Generator network with U-Net architecture."""
     def __init__(self):
         super(Generator, self).__init__()
 
@@ -106,7 +111,7 @@ class Generator(nn.Module):
         self.final = nn.Conv2d(64, 3, kernel_size=1)
         self.tanh = nn.Tanh()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x1 = self.initial(x)
         d1 = self.down1(x1)
         d2 = self.down2(d1)
@@ -125,9 +130,10 @@ class Generator(nn.Module):
         return out
 
 
-# PatchGAN discriminator with a receptive field of 70x70
+
 class Discriminator(nn.Module):
-    def __init__(self, in_channels=4, base_filters=64):
+    """PatchGAN discriminator with a receptive field of 70x70"""
+    def __init__(self, in_channels: int = 4, base_filters: int = 64):
         super(Discriminator, self).__init__()
         self.layer1 = ConvBlurPool(in_channels, base_filters, kernel_size=4, stride=2)
         self.layer2 = ConvBlurPool(base_filters, base_filters * 2, kernel_size=4, stride=2)
@@ -135,20 +141,9 @@ class Discriminator(nn.Module):
         self.final = nn.Conv2d(base_filters * 4, 1, kernel_size=4, stride=1, padding=1)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x1 = self.layer1(x)
         x2 = self.layer2(x1)
         x3 = self.layer3(x2)
         x4 = self.sigmoid(self.final(x3))
         return x4
-
-
-# For testing
-'''
-if __name__ == '__main__':
-    dis = Discriminator()
-    gen = Generator()
-    x = torch.randn(1,4,512,512)
-    out = d(x)
-    print(out.size)
-'''

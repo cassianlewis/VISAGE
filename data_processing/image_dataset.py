@@ -4,13 +4,29 @@ import torchvision.transforms as transforms
 import random
 import torch.nn.functional as F
 import os
-from typing import Type
+import torch
+from typing import Tuple
 
 from data_processing.augmentations import CustomTransform
 
 
 class ImageDataset(Dataset):
-    def __init__(self, data_dir: str, transform: Type = None, augmentation: bool = False):
+    """
+    A dataset class for loading and preprocessing images from different age groups.
+
+    Attributes:
+        data_dir (str): Directory containing age-grouped folders of images.
+        augmentation (bool): Flag to apply random augmentation to the images.
+        data (List[List[str]]): Nested list of image file paths.
+        ages (List[int]): List of age groups available in the dataset.
+        num_ages (int): Total number of age groups.
+        num_faces (int): Number of different faces.
+
+    Args:
+        data_dir (str): Path to the directory where images are stored in age-grouped folders.
+        augmentation (bool): If True, applies random augmentation to images. Defaults to False.
+    """
+    def __init__(self, data_dir: str, augmentation: bool = False) -> None:
         self.data = []
         folders = sorted(os.listdir(data_dir))
         file_list = sorted(os.listdir(f"{data_dir}/{folders[0]}"))
@@ -23,13 +39,12 @@ class ImageDataset(Dataset):
             img_paths = [f"{data_dir}/{folder}/{file}" for folder in folders]
             self.data.append(img_paths)
 
-        self.transform = transform
         self.augmentation = augmentation
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data) * self.num_ages**2
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor, int, int, torch.Tensor, torch.Tensor]:
         # Calculate face index and input/output age indices.
         face_idx = index // self.num_ages**2
         input_age_idx = (index % self.num_ages**2) // self.num_ages
@@ -41,7 +56,7 @@ class ImageDataset(Dataset):
         input_age = self.ages[input_age_idx]
         output_age = self.ages[output_age_idx]
 
-        # Load images using
+        # Load images
         input_img = Image.open(input_path).convert('RGB')
         output_img = Image.open(output_path).convert('RGB')
 
@@ -64,7 +79,9 @@ class ImageDataset(Dataset):
                 top = random.randint(0, img_height - crop_size)
 
                 # Define and call CustomTransform class
-                custom_transform = CustomTransform(a, b, c, d, rotation, kernel_size, gauss, left, top)
+                custom_transform = CustomTransform(brightness=a, contrast=b, saturation=c, hue=d,
+                                                   rotation=rotation, kernel_size=kernel_size, sigma=gauss,
+                                                   left=left, top=top)
                 input_img = custom_transform(input_img)
                 output_img = custom_transform(output_img)
 
@@ -78,7 +95,8 @@ class ImageDataset(Dataset):
 
         return input_img_resized, output_img_resized, input_age, output_age, input_img_raw, output_img_raw
 
-    def upsample(self, img):
+    @staticmethod
+    def upsample(img: torch.Tensor) -> torch.Tensor:
         output_image = F.interpolate(img, scale_factor=2, mode='bilinear', align_corners=False)
         return output_image
 

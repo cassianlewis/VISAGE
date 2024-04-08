@@ -7,7 +7,7 @@ import torch
 import matplotlib
 import matplotlib.pyplot as plt
 from utils.coach import FRANTrainer
-from models.models import Generator, Discriminator
+from models.networks import Generator, Discriminator
 from data_processing.image_dataset import ImageDataset
 import torch.nn.functional as F
 matplotlib.use('Agg')
@@ -16,15 +16,15 @@ matplotlib.use('Agg')
 def get_args():
     parser = argparse.ArgumentParser(description='Train VISAGE for re-aging')
     parser.add_argument('--epochs', '-e', type=int, default=10, help='Number of epochs')
-    parser.add_argument('--batch_size', '-b', type=int, default=4, help='Batch size')
-    parser.add_argument('--eval_steps', '-es', type=int, default=1000, help='Number of steps at which the model is evaluated')
+    parser.add_argument('--batch_size', '-b', type=int, default=1, help='Batch size')
+    parser.add_argument('--eval_steps', '-es', type=int, default=1, help='Number of steps at which the model is evaluated')
     parser.add_argument('--model_path_gen', '-gp', type=str, help='Path to generator for loading')
     parser.add_argument('--model_path_disc', '-dp', type=str, help='Path to discriminator for loading')
     parser.add_argument('--data_path', '-d', type=str, help='Path to training data', required=True)
     parser.add_argument('--output_path', '-o', type=str, help='Where to save the trained model/s', required=False, default='saved_models')
-    parser.add_argument('--image_path', '-t', type=str, help='Path to images saved during testing', default='edits')
+    parser.add_argument('--image_path', '-t', type=str, help='Path to images saved during testing', default='edits/outputs')
     parser.add_argument('--version', '-v', type=str, help='Model version number eg V5', default='V8')
-    parser.add_argument('--augmentation', '-a', type=bool, help='Whether or not to augment the training data', default=False)
+    parser.add_argument('--augmentation', '-a', type=bool, help='Whether or not to augment the training data', default=True)
     return parser.parse_args()
 
 
@@ -81,7 +81,7 @@ def train():
 
     args = get_args()
     epochs = args.epochs
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'Using device {device}')
 
     # Create saving directories
@@ -105,7 +105,7 @@ def train():
         discriminator.load_state_dict(saved_state_dict)
 
     # Create the dataset, dataloader and coach
-    dataset = ImageDataset(args.data_path, transform=None, augmentation=args.augmentation)
+    dataset = ImageDataset(args.data_path, augmentation=args.augmentation)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
     age_list = dataset.ages
@@ -127,7 +127,7 @@ def train():
             # Take training step and update loss dictionary
             generator.train()
             discriminator.train()
-            loss_dict = coach.training_step(epoch, input_images, output_images, input_ages, target_ages)
+            loss_dict = coach.training_step(input_images, output_images, input_ages, target_ages)
 
             train_hist['G_losses'].append(loss_dict['G_total'])
             train_hist['D_losses'].append(loss_dict['D_total'])
