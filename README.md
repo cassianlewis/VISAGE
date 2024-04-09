@@ -9,11 +9,11 @@ VISAGE is a project heavily inspired by [FRAN (Face Re-Aging Network)](https://s
 VISAGE is trained to take in an image of a face, an input age and an output age, and produce a 'delta' which is added to the original image to create the ageing effect. Unlike many GAN based methods of style (age) transfer, the face does not have to be encoded into a latent space representation, something which often distorts the identity of the subject. VISAGE is able to perform both **ageing and deageing**:
 
 <p align="center">
-<img src="docs/ageing.jpeg" width="1200px"/>
+<img src="docs/ageing.jpeg" width="1600px"/>
 </p>
 
 <p align="center">
-<img src="docs/deageing.jpeg" width="1200px"/>
+<img src="docs/deageing.jpeg" width="1600px"/>
 </p>
 
 ## Use in video
