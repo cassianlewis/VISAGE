@@ -21,6 +21,8 @@ Because VISAGE inherently preserves the identity of the subject, we can use it f
 
 https://github.com/cassianlewis/VISAGE/assets/131266258/bb2601e6-1fd2-45d8-a1ec-52b500fe1578
 
+The caveat here is that it doesn't work *perfectly*. There are still unwanted artefacts (although these should improve in future versions). 
+
 
 
 
@@ -82,4 +84,24 @@ python scripts/train.py \
 --data_path=path/to/data \
 --exp_dir=experiments \
 ```
+
+### Additional notes
+- The `augmentations` flag denotes whether to use random image augmentations (brightness, hue, rotation, crop etc) in the training data.
+
+
+## Inference 
+
+## Limitations
+### Data limitations
+A non-comprehensive list of limitations pertaining to the training data:
+- The model is primarily trained on frontal-facing portraits ([FFHQ](https://github.com/NVlabs/ffhq-dataset) style). As such, it will underperform on side-shots.
+- In a similar vein, it will not work well under certain lighting conditions (especially darker, cinematic shots).
+- The background/clothing is often slightly altered by [SAMs](https://github.com/yuval-alaluf/SAM?tab=readme-ov-file) ageing shift. Subsequently, VISAGE may sometimes replicate this (although this can probably be ameliorated by masking the training data and/or output).
+- The de-ageing process looks fairly airbrushed (again this is an artefact of the training data).
+- The ageing process is restricted to the face (doesn't take into account changes to hair). 
+
+### Other limitations
+- The model is currently trained using a fixed aspect ration (1:1) and tensor input size (512 x 512 pixels). This is fairly rigid, and makes inputting other aspect ratios impossible for now. Although we can hack this via facial detection and cropping, for which I will release some scripts soon, I would prefer to have a model which can take in any aspect ratio (I need to look into whether this is possible).
+- 512 x 512 pixels is not particularly high quality (I will train a 1024 x 1024 model in the future!).
+
 
