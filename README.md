@@ -2,7 +2,7 @@
 
 VISAGE is a project heavily inspired by [FRAN (Face Re-Aging Network)](https://studios.disneyresearch.com/2022/11/30/production-ready-face-re-aging-for-visual-effects/), designed to modify the apparent age of faces in images and videos. It uses a U-Net architecture for frame-by-frame age transformation, providing a tool for visual effects in media without extensive manual editing. VISAGE aims to facilitate age alteration in visual content, supporting both aging and de-aging effects efficiently.
 
-<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" height=22.5></a>
+<a href="https://opensource.org/license/apache-2-0"><img src="https://img.shields.io/github/license/saltstack/salt" height=22.5></a>
 
 
 ## How does it work?
