@@ -14,7 +14,7 @@ matplotlib.use('Agg')
 def get_args():
     parser = argparse.ArgumentParser(description='VISAGE inference')
     parser.add_argument('--model_path', '-gp', type=str, help='Path to generator for loading', required=True)
-    parser.add_argument('--data_path', '-d', type=str, help='Path to training data', required=True)
+    parser.add_argument('--data_path', '-d', type=str, help='Path to inference data', required=True)
     parser.add_argument('--output_path', '-o', type=str, help='Where to save the trained images', required=True)
     parser.add_argument('--input_age', '-ia', type=int, help='Age of the person in the input images', required=True)
     parser.add_argument('--output_age', '-oa', type=int, help='Age of the person in the input images', required=True)
@@ -32,21 +32,19 @@ def save_image(input_image, delta, input_age, target_age, filename):
     axs[1].imshow(normalise_permute_image(delta))
     axs[1].set_title('Delta')
     axs[1].axis('off')
-    axs[2].imshow(normalise_permute_image((input_image.to('cuda')+delta)))
+    axs[2].imshow(normalise_permute_image((input_image.to('cpu')+delta)))
     axs[2].set_title(f'Output - age = {target_age}')
     axs[2].axis('off')
 
     plt.savefig(filename)
     plt.close(fig)
 
-#
-# def normalise_permute_image(input_image):
-#     return input_image.permute(1, 2, 0).cpu().numpy()*0.5+0.5
-
 
 def normalise_permute_image(input_image):
     # Function to normalise [0,1] and permute the image for plotting
-    return (input_image.permute(1, 2, 0).cpu().numpy() - input_image.min().item()) / (input_image.max().item() - input_image.min().item())
+
+    clamped_image = torch.clamp(input_image, -1, 1)
+    return clamped_image.permute(1, 2, 0).detach().cpu().numpy() * 0.5 + 0.5
 
 
 def age_to_tensor(age):
@@ -90,15 +88,15 @@ def infer():
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
-    file_list = os.listdir(data_path) if os.path.isdir(data_path) else [data_path]
+    file_list = sorted(os.listdir(data_path) if os.path.isdir(data_path) else [data_path])
     for filename in tqdm(file_list, desc="Processing files"):
         # Load and process images
         filepath = os.path.join(data_path, filename)
-        input_img = transform(transforms.ToTensor()(Image.open(filepath).convert('RGB'))).to(device)
+        input_img = transform(transforms.ToTensor()(Image.open(filepath).convert('RGB')).to(device))
 
         input_img_size = input_img.size()[2]
 
-        input_img_resized = transform(transforms.ToTensor()(Image.open(filepath).convert('RGB').resize((512,512))).to(device))
+        input_img_resized = transform(transforms.ToTensor()(Image.open(filepath).convert('RGB').resize((512, 512))).to(device))
         input_age_tensor = age_to_tensor(input_age)
         output_age_tensor = age_to_tensor(output_age)
 
@@ -114,7 +112,7 @@ def infer():
             output_image = input_img + delta
             image = normalise_permute_image(output_image.squeeze(0))
 
-        plt.imshow(image)
+        # plt.imshow(image)
 
         # Resize image
         if args.resize:
@@ -124,7 +122,12 @@ def infer():
             image = Image.fromarray((255 * image).round().astype('uint8'))
 
         # Could also use save_image function to plot side by side images
-        image.save(os.path.join(output_path, filename))
+
+        # Save the output image
+        outfile = os.path.join(output_path, filename)
+        # save_image(input_img.squeeze(0), delta.squeeze(0), input_age, output_age, outfile)
+
+        image.save(outfile)
         image.close()
 
 if __name__ == '__main__':
