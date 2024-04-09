@@ -7,7 +7,7 @@ import torch
 import matplotlib
 import matplotlib.pyplot as plt
 from utils.coach import FRANTrainer
-from models.models import Generator, Discriminator
+from models.networks import Generator, Discriminator
 from data_processing.image_dataset import ImageDataset
 import torch.nn.functional as F
 matplotlib.use('Agg')
@@ -21,14 +21,13 @@ def get_args():
     parser.add_argument('--model_path_gen', '-gp', type=str, help='Path to generator for loading')
     parser.add_argument('--model_path_disc', '-dp', type=str, help='Path to discriminator for loading')
     parser.add_argument('--data_path', '-d', type=str, help='Path to training data', required=True)
-    parser.add_argument('--output_path', '-o', type=str, help='Where to save the trained model/s', required=False, default='saved_models')
-    parser.add_argument('--image_path', '-t', type=str, help='Path to images saved during testing', default='edits')
-    parser.add_argument('--version', '-v', type=str, help='Model version number eg V5', default='V8')
+    parser.add_argument('--exp_dir', '-t', type=str, help='Path to intermediate training images/losses/models', default='experiments')
+    parser.add_argument('--version', '-v', type=str, help='Model version number eg V5', default='V1')
     parser.add_argument('--augmentation', '-a', type=bool, help='Whether or not to augment the training data', default=False)
     return parser.parse_args()
 
 
-def save_image(input_image, delta, target_image,input_age, target_age,args, index, epoch, device):
+def save_image(input_image, delta, target_image, input_age, target_age, images_path, index, epoch, device):
     # Function to plot side by side input, delta, output and ground truth images
 
     fig, axs = plt.subplots(1, 4, figsize=(20, 5))
@@ -45,7 +44,7 @@ def save_image(input_image, delta, target_image,input_age, target_age,args, inde
     axs[3].set_title(f'Ground truth - age = {target_age}')
     axs[3].axis('off')
 
-    filename = os.path.join(args.image_path, f'{epoch}_{index}.jpeg')
+    filename = os.path.join(images_path, f'{epoch}_{index}.jpeg')
     plt.savefig(filename)
     plt.close(fig)
 
@@ -78,20 +77,23 @@ def upsample(img):
 
 
 def train():
-
     args = get_args()
     epochs = args.epochs
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'Using device {device}')
 
     # Create saving directories
-    model_output_path = args.output_path
-    if not os.path.isdir(model_output_path):
-        os.mkdir(model_output_path)
-    if not os.path.isdir(args.image_path):
-        os.mkdir(args.image_path)
-    if not os.path.isdir('losses/'+args.version):
-        os.mkdir('losses/'+args.version)
+    experiment_path = os.path.join(args.exp_dir, args.version)
+    os.makedirs(experiment_path, exist_ok=True)
+
+    model_output_path = os.path.join(experiment_path, 'models')
+    os.makedirs(model_output_path, exist_ok=True)
+
+    images_path = os.path.join(experiment_path, 'images')
+    os.makedirs(images_path, exist_ok=True)
+
+    losses_path = os.path.join(experiment_path, 'losses')
+    os.makedirs(losses_path, exist_ok=True)
 
     # Define the models and load weights if needed
     generator = Generator()
@@ -105,7 +107,7 @@ def train():
         discriminator.load_state_dict(saved_state_dict)
 
     # Create the dataset, dataloader and coach
-    dataset = ImageDataset(args.data_path, transform=None, augmentation=args.augmentation)
+    dataset = ImageDataset(args.data_path, augmentation=args.augmentation)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
     age_list = dataset.ages
@@ -124,28 +126,28 @@ def train():
         for i, (input_images, output_images, input_ages, target_ages, input_images_raw, output_images_raw) in enumerate(
                 tqdm(dataloader, desc=f'Epoch {epoch}/{epochs}', unit='batch')):
 
-            # Take training step and update loss dictionary
-            generator.train()
-            discriminator.train()
-            loss_dict = coach.training_step(epoch, input_images, output_images, input_ages, target_ages)
+            # # Take training step and update loss dictionary
+            # generator.train()
+            # discriminator.train()
+            # loss_dict = coach.training_step(input_images, output_images, input_ages, target_ages)
 
-            train_hist['G_losses'].append(loss_dict['G_total'])
-            train_hist['D_losses'].append(loss_dict['D_total'])
-            train_hist['G_adv'].append(loss_dict['G_adv'])
-            train_hist['G_L1'].append(loss_dict['G_L1'])
-            train_hist['G_perc'].append(loss_dict['G_perc'])
-            train_hist['D_real'].append(loss_dict['D_real'])
-            train_hist['D_fake'].append(loss_dict['D_fake'])
-            train_hist['D_fake_ages'].append(loss_dict['D_fake_ages'])
-
-            print('Step = {0} | gen_loss = {1:.3f} | dis_loss = {2:.3f}'.format(i, loss_dict['G_total'],
-                                                                                loss_dict['D_total']))
+            # train_hist['G_losses'].append(loss_dict['G_total'])
+            # train_hist['D_losses'].append(loss_dict['D_total'])
+            # train_hist['G_adv'].append(loss_dict['G_adv'])
+            # train_hist['G_L1'].append(loss_dict['G_L1'])
+            # train_hist['G_perc'].append(loss_dict['G_perc'])
+            # train_hist['D_real'].append(loss_dict['D_real'])
+            # train_hist['D_fake'].append(loss_dict['D_fake'])
+            # train_hist['D_fake_ages'].append(loss_dict['D_fake_ages'])
+            #
+            # print('Step = {0} | gen_loss = {1:.3f} | dis_loss = {2:.3f}'.format(i, loss_dict['G_total'],
+            #                                                                     loss_dict['D_total']))
             # Generate and plot images to assess model performance
             if (i+1) % args.eval_steps == 0:
                 deltas = coach.infer(input_images, input_ages, target_ages)
                 for x in range(len(input_images)):
                     save_image(input_images_raw[x], upsample(deltas[x]), output_images_raw[x], input_ages[x],
-                               target_ages[x], args, i+x, epoch, device)
+                               target_ages[x], images_path, i+x, epoch, device)
 
         losses_G = {
             'Adversarial': 'G_adv',
@@ -158,8 +160,8 @@ def train():
             'Fake ages': 'D_fake_ages'}
 
         # Plot losses and save models every epoch
-        plot_rolling_average(train_hist, window_size=100, losses=losses_G, filename=f'losses/{args.version}/gen_losses.png')
-        plot_rolling_average(train_hist, window_size=100, losses=losses_D, filename=f'losses/{args.version}/dis_losses.png')
+        plot_rolling_average(train_hist, window_size=100, losses=losses_G, filename=f'{losses_path}/gen_losses.png')
+        plot_rolling_average(train_hist, window_size=100, losses=losses_D, filename=f'{losses_path}/dis_losses.png')
 
         coach.save_generator(model_output_path+f'/generator_{args.version}_epoch_{epoch+1}')
         coach.save_discriminator(model_output_path + f'/discriminator_{args.version}_epoch_{epoch+1}')
