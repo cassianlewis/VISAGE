@@ -35,6 +35,11 @@ The caveat here is that it doesn't work *perfectly*. There are still unwanted ar
     + [Preparing your Data](#preparing-your-data)
     + [Training VISAGE](#training-visage)
     + [Additional Notes](#additional-notes)
+  * [Inference](#inference)
+  * [Limitations](#limitations)
+    + [Data limitations](#data-limitations)
+    + [Other limitations](#other-limitations)
+  * [Credits](credits)
 
 
 ## Getting Started
@@ -90,6 +95,25 @@ python scripts/train.py \
 
 
 ## Inference 
+Having trained your model or if you're using a pretrained one, you can use `scripts/inference.py` to run inference on an image/set of images.
+For example:
+```
+python scripts/inference.py \
+--model_path saved_models/generator.pt
+--data_path path/to/data
+--input_age 30
+--output_age 60
+--output path/to/output/folder
+```
+
+This will process a folder of images, ageing the subject to the age specified in `output_age`.
+
+The `show_delta` flag can be used to output the images like:
+
+![0024](https://github.com/cassianlewis/VISAGE/assets/131266258/886c88c1-9b10-4c9a-ba65-18b06f84fcdd)
+
+Without this flag, only the output image will be saved.
+
 
 ## Limitations
 ### Data limitations
@@ -103,5 +127,18 @@ A non-comprehensive list of limitations pertaining to the training data:
 ### Other limitations
 - The model is currently trained using a fixed aspect ration (1:1) and tensor input size (512 x 512 pixels). This is fairly rigid, and makes inputting other aspect ratios impossible for now. Although we can hack this via facial detection and cropping, for which I will release some scripts soon, I would prefer to have a model which can take in any aspect ratio (I need to look into whether this is possible).
 - 512 x 512 pixels is not particularly high quality (I will train a 1024 x 1024 model in the future!).
+
+
+## Credits
+**FRAN: Ideas and Implementation Details** \
+https://studios.disneyresearch.com/2022/11/30/production-ready-face-re-aging-for-visual-effects/
+
+
+**SAM: Training Data**  
+https://github.com/yuval-alaluf/SAM?tab=readme-ov-file \
+Copyright (c) 2021 Yuval Alaluf \
+License (MIT) https://github.com/yuval-alaluf/SAM/blob/master/LICENSE \
+
+ 
 
 
