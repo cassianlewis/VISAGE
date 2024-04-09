@@ -1,6 +1,27 @@
 # VISAGE: Visual Ageing Generation
 
-VISAGE is a project inspired by [FRAN (Face Re-Aging Network)](https://studios.disneyresearch.com/2022/11/30/production-ready-face-re-aging-for-visual-effects/), designed to modify the apparent age of faces in images and videos. It uses a U-Net architecture for frame-by-frame age transformation, providing a tool for visual effects in media without extensive manual editing. VISAGE aims to facilitate age alteration in visual content, supporting both aging and de-aging effects efficiently.
+VISAGE is a project heavily inspired by [FRAN (Face Re-Aging Network)](https://studios.disneyresearch.com/2022/11/30/production-ready-face-re-aging-for-visual-effects/), designed to modify the apparent age of faces in images and videos. It uses a U-Net architecture for frame-by-frame age transformation, providing a tool for visual effects in media without extensive manual editing. VISAGE aims to facilitate age alteration in visual content, supporting both aging and de-aging effects efficiently.
+
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" height=22.5></a>
+
+
+## How does it work?
+VISAGE is trained to take in an image of a face, an input age and an output age, and produce a 'delta' which is added to the original image to create the ageing effect. Unlike many GAN based methods of style (age) transfer, the face does not have to be encoded into a latent space representation, something which often distorts the identity of the subject. VISAGE is able to perform both **ageing and deageing**:
+
+<p align="center">
+<img src="docs/ageing.jpeg" width="1200px"/>
+</p>
+
+<p align="center">
+<img src="docs/deageing.jpeg" width="1200px"/>
+</p>
+
+## Use in video
+Because VISAGE inherently preserves the identity of the subject, we can use it for multiple different frames of a video sequence:
+
+https://github.com/cassianlewis/VISAGE/assets/131266258/bb2601e6-1fd2-45d8-a1ec-52b500fe1578
+
+
 
 
 ## Table of Contents
@@ -10,7 +31,7 @@ VISAGE is a project inspired by [FRAN (Face Re-Aging Network)](https://studios.d
   * [Pretrained Models](#pretrained-models)
   * [Training](#training)
     + [Preparing your Data](#preparing-your-data)
-    + [Training SAM](#training-sam)
+    + [Training VISAGE](#training-visage)
     + [Additional Notes](#additional-notes)
 
 
