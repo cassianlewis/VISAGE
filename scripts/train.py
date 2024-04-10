@@ -126,22 +126,22 @@ def train():
         for i, (input_images, output_images, input_ages, target_ages, input_images_raw, output_images_raw) in enumerate(
                 tqdm(dataloader, desc=f'Epoch {epoch}/{epochs}', unit='batch')):
 
-            # # Take training step and update loss dictionary
-            # generator.train()
-            # discriminator.train()
-            # loss_dict = coach.training_step(input_images, output_images, input_ages, target_ages)
+            # Take training step and update loss dictionary
+            generator.train()
+            discriminator.train()
+            loss_dict = coach.training_step(input_images, output_images, input_ages, target_ages)
 
-            # train_hist['G_losses'].append(loss_dict['G_total'])
-            # train_hist['D_losses'].append(loss_dict['D_total'])
-            # train_hist['G_adv'].append(loss_dict['G_adv'])
-            # train_hist['G_L1'].append(loss_dict['G_L1'])
-            # train_hist['G_perc'].append(loss_dict['G_perc'])
-            # train_hist['D_real'].append(loss_dict['D_real'])
-            # train_hist['D_fake'].append(loss_dict['D_fake'])
-            # train_hist['D_fake_ages'].append(loss_dict['D_fake_ages'])
-            #
-            # print('Step = {0} | gen_loss = {1:.3f} | dis_loss = {2:.3f}'.format(i, loss_dict['G_total'],
-            #                                                                     loss_dict['D_total']))
+            train_hist['G_losses'].append(loss_dict['G_total'])
+            train_hist['D_losses'].append(loss_dict['D_total'])
+            train_hist['G_adv'].append(loss_dict['G_adv'])
+            train_hist['G_L1'].append(loss_dict['G_L1'])
+            train_hist['G_perc'].append(loss_dict['G_perc'])
+            train_hist['D_real'].append(loss_dict['D_real'])
+            train_hist['D_fake'].append(loss_dict['D_fake'])
+            train_hist['D_fake_ages'].append(loss_dict['D_fake_ages'])
+
+            print('Step = {0} | gen_loss = {1:.3f} | dis_loss = {2:.3f}'.format(i, loss_dict['G_total'],
+                                                                                loss_dict['D_total']))
             # Generate and plot images to assess model performance
             if (i+1) % args.eval_steps == 0:
                 deltas = coach.infer(input_images, input_ages, target_ages)

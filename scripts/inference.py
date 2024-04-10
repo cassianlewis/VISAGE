@@ -19,11 +19,13 @@ def get_args():
     parser.add_argument('--input_age', '-ia', type=int, help='Age of the person in the input images', required=True)
     parser.add_argument('--output_age', '-oa', type=int, help='Age of the person in the input images', required=True)
     parser.add_argument('--resize', '-r', type=int, help='Resize output image to certain value')
+    parser.add_argument('--show_delta', '-sd', help='Whether to print input images and delta or just the '
+                                                             'final result', action=argparse.BooleanOptionalAction)
 
     return parser.parse_args()
 
 
-def save_image(input_image, delta, input_age, target_age, filename):
+def save_image(input_image, delta, input_age, target_age, filename, device):
     # Function to plot side by side images of input, delta and output images
     fig, axs = plt.subplots(1, 3, figsize=(15, 5))
     axs[0].imshow(normalise_permute_image(input_image))
@@ -32,7 +34,7 @@ def save_image(input_image, delta, input_age, target_age, filename):
     axs[1].imshow(normalise_permute_image(delta))
     axs[1].set_title('Delta')
     axs[1].axis('off')
-    axs[2].imshow(normalise_permute_image((input_image.to('cpu')+delta)))
+    axs[2].imshow(normalise_permute_image((input_image.to(device)+delta)))
     axs[2].set_title(f'Output - age = {target_age}')
     axs[2].axis('off')
 
@@ -89,7 +91,7 @@ def infer():
     ])
 
     file_list = sorted(os.listdir(data_path) if os.path.isdir(data_path) else [data_path])
-    for filename in tqdm(file_list, desc="Processing files"):
+    for filename in tqdm(file_list[20:40], desc="Processing files"):
         # Load and process images
         filepath = os.path.join(data_path, filename)
         input_img = transform(transforms.ToTensor()(Image.open(filepath).convert('RGB')).to(device))
@@ -109,10 +111,9 @@ def infer():
             delta = generator(model_input)
             delta = upsample(delta, size=input_img_size)
 
+            # add delta to input image and normalise
             output_image = input_img + delta
             image = normalise_permute_image(output_image.squeeze(0))
-
-        # plt.imshow(image)
 
         # Resize image
         if args.resize:
@@ -121,14 +122,13 @@ def infer():
         else:
             image = Image.fromarray((255 * image).round().astype('uint8'))
 
-        # Could also use save_image function to plot side by side images
-
-        # Save the output image
+        # Save the output image or use save_image function to plot side by side images
         outfile = os.path.join(output_path, filename)
-        # save_image(input_img.squeeze(0), delta.squeeze(0), input_age, output_age, outfile)
-
-        image.save(outfile)
-        image.close()
+        if args.show_delta:
+            save_image(input_img.squeeze(0), delta.squeeze(0), input_age, output_age, outfile, device)
+        else:
+            image.save(outfile)
+            image.close()
 
 if __name__ == '__main__':
     infer()
