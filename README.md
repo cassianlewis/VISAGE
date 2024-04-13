@@ -19,7 +19,10 @@ VISAGE is trained to take in an image of a face, an input age and an output age,
 ## Use in video
 Because VISAGE inherently preserves the identity of the subject, we can use it for multiple different frames of a video sequence:
 
-https://github.com/cassianlewis/VISAGE/assets/131266258/bb2601e6-1fd2-45d8-a1ec-52b500fe1578
+
+https://github.com/cassianlewis/VISAGE/assets/131266258/49451e60-7509-4404-81dc-ee345a4c1c04
+
+
 
 The caveat here is that it doesn't work *perfectly*. There are still unwanted artefacts (although these should improve in future versions). 
 
